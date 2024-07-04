@@ -26,7 +26,7 @@ text_splitter2 = CharacterTextSplitter(
 
 final_items = []
 import os
-directory = r"/content/drive/MyDrive/biomodels (2)" #can do all but for the purposes of this, will do a mix of different biomodels across the spectrum (around 30 max!)
+directory = r"YOUR_PATH" #can do all but for the purposes of this, will do a mix of different biomodels across the spectrum (around 30 max!)
 files = os.listdir(directory)
 
 for file in files:
@@ -91,7 +91,7 @@ print(documents[7])
 type(documents)
 
 query_results = collection.query(
-    query_texts = ["Give the model that has ATP in it. What is the metadata for this model? "],
+    query_texts = ["YOUR_QUESTION"],
     n_results=5,
 )
 
