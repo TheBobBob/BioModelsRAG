@@ -65,7 +65,7 @@ drive.mount('/content/drive')
 import google.generativeai as genai
 import os
 
-os.environ["API_KEY"] = "AIzaSyBIZakoaE9S0QhbzOw2msHRwczRAl14zmQ"
+os.environ["API_KEY"] = "YOUR_API_KEY"
 
 genai.configure(api_key=os.environ["API_KEY"])
 
