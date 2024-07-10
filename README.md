@@ -7,5 +7,5 @@ Required Packages:
 2. chromadb
 3. sentence_transformers
 
-BioRAG also requires the use of BioModels, which can be downloaded directly from this repository or accessed using the path to the folder within the code. **Accessing the files from the repository will require downloading the repository and manually extracting the folder and uploading to the folder where the required code is running. **
+BioRAG also requires the use of BioModels, which can be downloaded directly from this repository or accessed using the path to the folder within the code. Accessing the files from the repository will require downloading the repository and manually extracting the folder and uploading to the folder where the required code is running.
 
