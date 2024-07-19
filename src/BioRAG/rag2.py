@@ -21,7 +21,7 @@ text_splitter2 = CharacterTextSplitter(
 final_items = []
 import os
 
-directory = r"FOLDER_PATH"  
+directory = r"C:\Users\navan\BioRAG\src\BioRAG\biomodels"  
 files = os.listdir(directory)
 
 for file in files:
@@ -41,7 +41,7 @@ import sentence_transformers
 from sentence_transformers import SentenceTransformer
 
 CHROMA_DATA_PATH = r"CHROMA_EMBEDDINGS_PATH"
-COLLECTION_NAME = "BIOMODELS"
+COLLECTION_NAME = "Scoups123456791011121314"
 EMBED_MODEL = "all-MiniLM-L6-v2"
 client = chromadb.PersistentClient(path = CHROMA_DATA_PATH)
 
@@ -50,7 +50,7 @@ embedding_func = embedding_functions.SentenceTransformerEmbeddingFunction(
 )
 
 collection = client.create_collection(
-    name = "NAME_OF_YOUR_COLLECTION",
+    name = "Scoups123456791011121314",
     embedding_function=embedding_func,
     metadata={"hnsw:space": "cosine"},
 )
@@ -60,33 +60,39 @@ documents = []
 
 for item in final_items:
     print(item)
-    prompt = f'Please summarize this segment of Antimony: {item}. The summaries must be clear and concise. For Display Names, provide the value for each variable.  Do not expand mathematical functions into words.'
-    documents2 = ollama.generate(model = "llama3", prompt=prompt)
+    prompt = f'Please summarize this segment of Antimony: {item}. The summaries must be clear and concise. For Display Names, provide the value for each variable. Expand mathematical functions into words. Cross reference all parts of the provided context. Explain well without errors and in an easily understandable way. Write in a list format. '
+    documents5 = ollama.generate(model = "llama3", prompt=prompt)
+    documents2 = documents5["response"] #need to just extract response
     documents.append(documents2) 
+
+#fixed the explanation part but its not registering.
 
 collection.add(
     documents = documents,
     ids=[f"id{i}" for i in range(len(documents))]
 )
 
-query_results = collection.query(
-    query_texts = ["YOUR_QUERY"],
-    n_results=5,
-)
+while 1==1:
+    query_text = input("What question would you like to ask BioRAG?")
+    query_results = collection.query(
+        query_texts = query_text,
+        n_results=5,
+    )
 
-print(query_results)
-best_recommendation = query_results["documents"]
+    print(query_results)
+    best_recommendation = query_results['documents']
 
-query_texts = "YOUR_QUERY"
+    query_texts = "Can you give the rate equation for the interaction between the two kinds of desensitized Ach?"
 
-prompt_template = prompt_template = f"""Use the following pieces of context to answer the question at the end. If you don't know the answer, say so.
+    prompt_template = f"""Use the following pieces of context to answer the question at the end. If you don't know the answer, say so.
 
-This is the first piece of context necessary: {best_recommendation}
+    This is the piece of context necessary: {best_recommendation}
 
-Cross-reference all pieces of context to define variables and other unknown entities. Calculate mathematical values based on provided matching variables.
+    Cross-reference all pieces of context to define variables and other unknown entities. Calculate mathematical values based on provided matching variables.
 
-Question: {query_texts}
+    Question: {query_text}
 
-"""
-response = ollama.generate_content(prompt_template)
-print(response.text)
+    """
+    response = ollama.generate(model = "llama3", prompt=prompt_template)
+    print(response['response'])
+
