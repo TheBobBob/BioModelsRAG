@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioModelsRAG</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .section input, .section button {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .section button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .section button:hover {
+            background-color: #0056b3;
+        }
+        .output {
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BioModelsRAG</h1>
+        </div>
+        <div class="section">
+            <label for="question">What question would you like to ask BioModelsRAG today?</label>
+            <input type="text" id="question" placeholder="Type your question here...">
+            <button onclick="showResponse()">Submit</button>
+        </div>
+        <div class="section">
+            <label for="response">Response:</label>
+            <div id="response" class="output">Your answer will appear here.</div>
+        </div>
+    </div>
+
+    <script>
+        function showResponse() {
+            var question = document.getElementById('question').value;
+            var responseDiv = document.getElementById('response');
+            responseDiv.textContent = 'You asked: ' + question;
+        }
+    </script>
+</body>
+</html>
