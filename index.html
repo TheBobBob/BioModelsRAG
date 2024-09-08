@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Python Package Documentation">
+    <title>Python Package Documentation</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 1rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        h2, h3 {
+            margin-top: 1.5rem;
+        }
+        .navbar {
+            margin-bottom: 2rem;
+        }
+        .info-section {
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">BioModelsRAG - Documentation</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#info">Info</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#modules">Modules</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#main">Main</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Info Section -->
+    <section id="info" class="info-section">
+        <div class="container">
+            <h2>Info</h2>
+            <p>BioModelsRAG is a tool to analyze BioModels for researchers. BioRAG requires the following packages as well as a local version of Ollama, which can be downloaded from the Ollama website and installed using pip install in your IDE terminal.</p>
+            <h3>Required Packages:</h3>
+            <ul>
+                <li>requests</li>
+                <li>tellurium</li>
+                <li>ollama</li>
+                <li>langchain_text_splitters</li>
+                <li>chromadb</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Documentation Sections -->
+    <div class="container">
+        <!-- Modules Section -->
+        <section id="modules">
+            <h2>Modules</h2>
+
+            <!-- fetch_github_json -->
+            <section id="fetch_github_json">
+                <h3>fetch_github_json</h3>
+                <p>The <code>fetch_github_json</code> function sets up the cache of BioModels to be queried.</p>
+                <div class="code-block">
+                    <code>
+from fetch_github_json import fetch_github_json
+fetch_github_json()
+                    </code>
+                </div>
+            </section>
+
+            <!-- search_models -->
+            <section id="search_models">
+                <h3>search_models</h3>
+                <p>The <code>search_models</code> function searches the cache using user-given query words.</p>
+                <div class="code-block">
+                    <code>
+from search_models import search_models
+search_str = input("Enter search query: ")
+models = search_models(search_str)
+                    </code>
+                </div>
+            </section>
+
+            <!-- download_model_file -->
+            <section id="download_model_file">
+                <h3>download_model_file</h3>
+                <p>The <code>download_model_file</code> function downloads the BioModels in SBML format to be converted into Antimony.</p>
+                <div class="code-block">
+                    <code>
+from download_model_file import download_model_file
+
+for model_id, model_data in models.items():
+    print(f"Processing model: {model_data['name']}")
+            
+    model_url = model_data['url']
+    model_file_path = download_model_file(model_url, model_id)
+                    </code>
+                </div>
+            </section>
+
+            <!-- convert_sbml_to_antimony -->
+            <section id="convert_sbml_to_antimony">
+                <h3>convert_sbml_to_antimony</h3>
+                <p>The <code>convert_sbml_to_antimony</code> function converts the SBML format models into Antimony for the text splitter.</p>
+                <div class="code-block">
+                    <code>
+from convert_sbml_to_antimony import convert_sbml_to_antimony
+if model_file_path:
+    # Step 3: Convert the downloaded SBML model to Antimony format
+    antimony_file_path = os.path.join(LOCAL_DOWNLOAD_DIR, f"{model_id}.txt")
+    convert_sbml_to_antimony(model_file_path, antimony_file_path)
+                    </code>
+                </div>
+            </section>
+
+            <!-- split_biomodels -->
+            <section id="split_biomodels">
+                <h3>split_biomodels</h3>
+                <p>The <code>split_biomodels</code> function splits the downloaded Antimony format models for use by the text splitter.</p>
+                <div class="code-block">
+                    <code>
+from split_biomodels import split_biomodels
+final_items = split_biomodels(antimony_file_path)
+all_final_items=[]
+all_final_items.extend(final_items)
+                    </code>
+                </div>
+            </section>
+
+            <!-- create_vector_db -->
+            <section id="create_vector_db">
+                <h3>create_vector_db</h3>
+                <p>The <code>create_vector_db</code> function creates the vector database that the biomodels are passed into. Before they are passed in, each segment of biomodel is summarized using an LLM so it is easier to query using the cosine similarity.</p>
+                <div class="code-block">
+                    <code>
+from create_vector_db import create_vector_db
+if all_final_items:
+    db = create_vector_db(all_final_items)
+                    </code>
+                </div>
+            </section>
+
+            <!-- generate_response -->
+            <section id="generate_response">
+                <h3>generate_response</h3>
+                <p>The <code>generate_response</code> function queries the vector database and generates a response to a user-provided query.</p>
+                <div class="code-block">
+                    <code>
+from generate_response import generate_response
+query_text = input("Enter your question about the model(s): ")
+response = generate_response(db, query_text)
+print(f"Response: {response}")
+                    </code>
+                </div>
+            </section>
+        </section>
+
+        <!-- Main Function Section -->
+        <section id="main">
+            <h2>Main</h2>
+            <p>Below is an example of how to structure each function into the full pipeline. The pipeline below does the following....</p>
+            <ol>
+                <li>Fetches GitHub JSON data.</li>
+                <li>Gets user input for a search query.</li>
+                <li>Searches models based on the query.</li>
+                <li>Downloads and processes each model.</li>
+                <li>Converts models to Antimony format and splits them.</li>
+                <li>Creates a vector database from the split biomodels.</li>
+                <li>Queries the database and generates a response based on user input.</li>
+            </ol>
+            <p>It can also be broken down into parts to use each function separately.</p>
+            <div class="code-block">
+                <code>
+import os<br>
+import tempfile<br>
+from fetch_github_json import fetch_github_json<br>
+from search_models import search_models<br>
+from download_model_file import download_model_file<br>
+from convert_sbml_to_antimony import convert_sbml_to_antimony<br>
+from split_biomodels import split_biomodels<br>
+from create_vector_db import create_vector_db<br>
+from generate_response import generate_response<br>
+
+# Set up a temporary directory for model downloads<br>
+LOCAL_DOWNLOAD_DIR = tempfile.mkdtemp()<br>
+
+def main(search_str: str, query_text: str, download_dir: str = LOCAL_DOWNLOAD_DIR) -> str:<br>
+    """<br>
+    Main function to execute the workflow of searching for models, downloading,<br>
+    converting, splitting, and querying the database.<br>
+
+    Args:<br>
+        search_str (str): The search query to find relevant models.<br>
+        query_text (str): The query text to generate a response from the vector database.<br>
+        download_dir (str): Directory to store downloaded files (default is a temporary directory).<br>
+
+    Returns:<br>
+        str: The response generated from the vector database based on the query text.<br>
+    """<br>
+    # Step 1: Fetch models and search for the query<br>
+    models = search_models(search_str)<br>
+
+    if models:<br>
+        all_final_items = []<br>
+        for model_id, model_data in models.items():<br>
+            model_url = model_data['url']<br>
+            model_file_path = download_model_file(model_url, model_id, download_dir)<br>
+
+            if model_file_path:<br>
+                # Step 3: Convert the downloaded SBML model to Antimony format<br>
+                antimony_file_path = os.path.join(download_dir, f"{model_id}.txt")<br>
+                convert_sbml_to_antimony(model_file_path, antimony_file_path)<br>
+
+                # Step 4: Split the Antimony format model<br>
+                final_items = split_biomodels(antimony_file_path)<br>
+                all_final_items.extend(final_items)<br>
+
+        # Step 5: Create a vector database from the split biomodels<br>
+        if all_final_items:<br>
+            db = create_vector_db(all_final_items)<br>
+
+            # Step 6: Query the vector database<br>
+            response = generate_response(db, query_text)<br>
+            return response<br>
+    return "No models found or unable to process."  # Return a default message if no models are found or processed<br>
+
+# Example usage<br>
+if __name__ == "__main__":<br>
+    search_str = input("Enter search query: ")<br>
+    query_text = input("Enter your question about the model(s): ")<br>
+    result = main(search_str, query_text)<br>
+    print(f"Response: {result}")<br>
+                </code>
+            </div>
+        </section>
+    </div>
+
+    <!-- Bootstrap JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
