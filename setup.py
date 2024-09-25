@@ -19,9 +19,9 @@ setup(
         ],
     },
     author='Bhavyahshree Navaneetha Krishnan', 
-    author_email='your_email@example.com',     
+    author_email='bhavyak7@uw.edu',     
     description='A package for processing and querying biomodels', 
-    url='https://github.com/your_username/your_repo', 
+    url='https://github.com/TheBobBob/BioModelsRAG', 
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
