@@ -15,82 +15,90 @@ cached_data = None
 conversation_history = []  # Store previous conversation history
 persistent_db = None  # Keep the database persistent
 
-def fetch_github_json():
-    url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO_CACHE}/contents/{BIOMODELS_JSON_DB_PATH}"
-    headers = {"Accept": "application/vnd.github+json"}
-    response = requests.get(url, headers=headers)
+class BioModelCacheRetrieval:
+    def __init__(self, search_str, github_owner="TheBobBob", github_repo_cache="BiomodelsCache"):
+        self.search_str = search_str
+        self.github_owner = github_owner
+        self.github_repo_cache = github_repo_cache
     
-    if response.status_code == 200:
-        data = response.json()
-        if "download_url" in data:
-            file_url = data["download_url"]
-            json_response = requests.get(file_url)
-            return json_response.json()
-        else:
-            raise ValueError(f"Unable to fetch model DB from GitHub repository: {GITHUB_OWNER} - {GITHUB_REPO_CACHE}")
-    else:
-        raise ValueError(f"Unable to fetch model DB from GitHub repository: {GITHUB_OWNER} - {GITHUB_REPO_CACHE}")
+    def search_models(self):
+        """Searches the cache for specific BioModels with keywords.
 
-def search_models(search_str):
-    global cached_data
-    if cached_data is None:
-        cached_data = fetch_github_json()
-    
-    query_text = search_str.strip().lower()
-    models = {}
-    
-    for model_id, model_data in cached_data.items():
-        if 'name' in model_data:
-            name = model_data['name'].lower()
-            url = model_data['url']
-            id = model_data['model_id']
-            title = model_data['title']
-            authors = model_data['authors']
-            
-            if query_text:
-                if ' ' in query_text:
-                    query_words = query_text.split(" ")
-                    if all(word in ' '.join([str(v).lower() for v in model_data.values()]) for word in query_words):
-                        models[model_id] = {
-                            'ID': model_id,
-                            'name': name,
-                            'url': url,
-                            'id': id,
-                            'title': title,
-                            'authors': authors,
-                        }
-                else:
-                    if query_text in ' '.join([str(v).lower() for v in model_data.values()]):
-                        models[model_id] = {
-                            'ID': model_id,
-                            'name': name,
-                            'url': url,
-                            'id': id,
-                            'title': title,
-                            'authors': authors,
-                        }
-    
-    return models
-
-def download_model_file(model_url, model_id):
-    model_url = f"https://raw.githubusercontent.com/konankisa/BiomodelsStore/main/biomodels/{model_id}/{model_id}_url.xml"
-    try:
-        response = requests.get(model_url)
+        Returns:
+            dict: A dictionary of models matching the search query.
+        """
+        
+        BIOMODELS_JSON_DB_PATH = "src/cached_biomodels.json"
+        cached_data = None
+        
+        url = f"https://api.github.com/repos/{self.github_owner}/{self.github_repo_cache}/contents/{BIOMODELS_JSON_DB_PATH}"
+        headers = {"Accept": "application/vnd.github+json"}
+        response = requests.get(url, headers=headers)
+        
         if response.status_code == 200:
-            os.makedirs(LOCAL_DOWNLOAD_DIR, exist_ok=True)
-            file_path = os.path.join(LOCAL_DOWNLOAD_DIR, f"{model_id}.xml")
-            
-            with open(file_path, 'wb') as file:
-                file.write(response.content)
-            
-            print(f"Model {model_id} downloaded successfully: {file_path}")
-            return file_path
+            data = response.json()
+            if "download_url" in data:
+                file_url = data["download_url"]
+                json_response = requests.get(file_url)
+                cached_data = json_response.json()
         else:
-            print(f"Failed to download the model from {model_url}. Status code: {response.status_code}")
+            print(f"Failed to retrieve data from GitHub. Status code: {response.status_code}")
+            return {}
+
+        query_text = self.search_str.strip().lower()
+        models = {}
+
+        if cached_data:
+            for model_id, model_data in cached_data.items():
+                if 'name' in model_data:
+                    name = model_data['name'].lower()
+                    url = model_data['url']
+                    id = model_data['model_id']
+                    title = model_data['title']
+                    authors = model_data['authors']
+                    model_info = ' '.join([str(v).lower() for v in model_data.values()])
+
+                    if query_text in model_info and model_id not in models:
+                        models[model_id] = {
+                            'ID': model_id,
+                            'name': name,
+                            'url': url,
+                            'id': id,
+                            'title': title,
+                            'authors': authors,
+                        }
+        return models
+
+    @staticmethod
+    def download_model_files(model_url, model_id):
+        LOCAL_DOWNLOAD_DIR = tempfile.mkdtemp()
+        """Downloads the file in SBML format given the model URL.
+
+        Args:
+            model_url (str): The url used for download
+            model_id (str): The model ID used to complete the download URL.
+
+        Returns:
+            str: The file path of the downloaded model if successful, or None if the download had failed.
+        """
+        model_url = f"https://raw.githubusercontent.com/TheBobBob/BiomodelsStore/main/biomodels/{model_id}/{model_id}_url.xml"
+        try:
+            response = requests.get(model_url)
+            if response.status_code == 200:
+                os.makedirs(LOCAL_DOWNLOAD_DIR, exist_ok=True)
+                file_path = os.path.join(LOCAL_DOWNLOAD_DIR, f"{model_id}.xml")
+                
+                with open(file_path, 'wb') as file:
+                    file.write(response.content)
+                
+                print(f"Model {model_id} downloaded successfully: {file_path}")
+                return file_path
+            else:
+                print(f"Failed to download the model from {model_url}. Status code: {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"Error downloading model {model_id} from {model_url}: {e}")
             return None
-    except Exception as e:
-        print(f"Error downloading model {model_id} from {model_url}: {e}")
-        return None
 
 def convert_sbml_to_antimony(sbml_file_path, antimony_file_path):
     """Convert the SBML model to Antimony format and save to a file."""
@@ -145,39 +153,56 @@ def create_vector_db(final_items):
         print("Database already initialized.")
         return persistent_db
     
+    from chromadb.utils import embedding_functions
+    embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+    collection_name = 'BioModelsRAG'
     import chromadb
     client = chromadb.Client()
-    db = client.create_collection(
-        name="BioModelsRAG",
-        metadata={"hnsw:space": "cosine"}
-    )
-    documents = []
+    db = client.get_or_create_collection(name=collection_name, embedding_function=embedding_function)
+
+    
+    documents_to_add = []
+    ids_to_add = []
     
     for item in final_items:
-        prompt = f"""
-        Summarize the following segment of Antimony in a clear and concise manner:
-        1. Provide a detailed summary using a limited number of words
-        2. Maintain all original values and include any mathematical expressions or values in full. 
-        3. Ensure that all variable names and their values are clearly presented. 
-        4. Write the summary in paragraph format, putting an emphasis on clarity and completeness. 
-        
-        Here is the antimony segment to summarize: {item}
-        """
-        documents5 = ollama.generate(model="llama3", prompt=prompt)
-        documents2 = documents5['response']
-        documents.append(documents2)
+        item2 = str(item)
+        item_id = f"id_{item2[:45].replace(' ', '_')}"
     
-    if final_items:
-        db.add(
-            documents=documents,  # Ensure these are strings
-            ids=[f"id{i}" for i in range(len(final_items))]
+        existing_documents = db.get(ids=[item_id])
+    
+        if not existing_documents:  # If the ID does not exist
+            # Generate the LLM prompt and output
+            prompt = f"""
+            Summarize the following segment of Antimony in a clear and concise manner:
+            1. Provide a detailed summary using a limited number of words
+            2. Maintain all original values and include any mathematical expressions or values in full.
+            3. Ensure that all variable names and their values are clearly presented.
+            4. Write the summary in paragraph format, putting an emphasis on clarity and completeness.
+        
+            Here is the antimony segment to summarize: {item}
+            """
+    
+            output = ollama.generate(
+                model = 'llama3', prompt = prompt
+            )
+    
+            # Extract the generated summary text
+            final_result = output['documents']
+    
+            # Add the result to documents and its corresponding ID to the lists
+            documents_to_add.append(final_result)
+            ids_to_add.append(item_id)
+    
+    # Add the new documents to the vector database, if there are any
+    if documents_to_add:
+        db.upsert(
+            documents=documents_to_add,
+            ids=ids_to_add
         )
     
-    persistent_db = db  # Store the database for future use
     return db
 
 def generate_response(db, query_text):
-    global conversation_history
     query_results = db.query(
         query_texts=query_text,
         n_results=5,
@@ -191,15 +216,12 @@ def generate_response(db, query_text):
     # Extract the best recommendations from the query results
     best_recommendation = query_results['documents']
     
-    # Add the previous conversation context to the prompt
-    conversation_history.append(f"Q: {query_text}\nA: {best_recommendation}")
-    full_conversation = "\n".join(conversation_history)
     
     # Create the prompt for the ollama model with conversation history
     prompt_template = f"""
-    You are a conversational agent. Here is the ongoing conversation:
     
-    {full_conversation}
+    Use the following context to answer the following question:
+    {best_recommendation}
     
     Now, using the context provided below, answer the following question:
     {query_text}
@@ -221,8 +243,8 @@ def generate_response(db, query_text):
 def main():
     global persistent_db
     search_str = input("Enter search query: ")
-    models = search_models(search_str)
-    
+    biomodelscacheretrieval = BioModelCacheRetrieval(search_str)
+    models = biomodelscacheretrieval.search_models()
     if models:
         all_final_items = []
         
@@ -231,7 +253,7 @@ def main():
             
             # Download and process each model
             model_url = model_data['url']
-            model_file_path = download_model_file(model_url, model_id)
+            model_file_path = biomodelscacheretrieval.download_model_files(model_url, model_id)
             
             if model_file_path:
                 antimony_file_path = model_file_path.replace('.xml', '.txt')
