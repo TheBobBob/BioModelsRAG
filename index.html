@@ -75,44 +75,83 @@
         <section id="modules">
             <h2>Modules</h2>
 
-            <!-- fetch_github_json -->
-            <section id="fetch_github_json">
-                <h3>fetch_github_json</h3>
-                <p>The <code>fetch_github_json</code> function sets up the cache of BioModels to be queried.</p>
+            <!-- biomodelcacheretrieval -->
+            <section id="biomodelcacheretrieval">
+                <h3>biomodelcacheretrieval</h3>
+                <p>The <code> The class biomodelcacheretrieval</code> queries the BioModels cache using key words and downloads the relevant BioModels.</p>
                 <div class="code-block">
                     <code>
-from fetch_github_json import fetch_github_json
-fetch_github_json()
-                    </code>
-                </div>
-            </section>
 
-            <!-- search_models -->
-            <section id="search_models">
-                <h3>search_models</h3>
-                <p>The <code>search_models</code> function searches the cache using user-given query words.</p>
-                <div class="code-block">
-                    <code>
-from search_models import search_models
-search_str = input("Enter search query: ")
-models = search_models(search_str)
-                    </code>
-                </div>
-            </section>
+class BioModelCacheRetrieval:
+    def __init__(self, search_str, github_owner="TheBobBob", github_repo_cache="BiomodelsCache"):
+        self.search_str = search_str
+        self.github_owner = github_owner
+        self.github_repo_cache = github_repo_cache
+    
+    def search_models(self):
+        BIOMODELS_JSON_DB_PATH = "src/cached_biomodels.json"
+        cached_data = None
+        
+        url = f"https://api.github.com/repos/{self.github_owner}/{self.github_repo_cache}/contents/{BIOMODELS_JSON_DB_PATH}"
+        headers = {"Accept": "application/vnd.github+json"}
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "download_url" in data:
+                file_url = data["download_url"]
+                json_response = requests.get(file_url)
+                cached_data = json_response.json()
+        else:
+            print(f"Failed to retrieve data from GitHub. Status code: {response.status_code}")
+            return {}
 
-            <!-- download_model_file -->
-            <section id="download_model_file">
-                <h3>download_model_file</h3>
-                <p>The <code>download_model_file</code> function downloads the BioModels in SBML format to be converted into Antimony.</p>
-                <div class="code-block">
-                    <code>
-from download_model_file import download_model_file
+        query_text = self.search_str.strip().lower()
+        models = {}
 
-for model_id, model_data in models.items():
-    print(f"Processing model: {model_data['name']}")
-            
-    model_url = model_data['url']
-    model_file_path = download_model_file(model_url, model_id)
+        if cached_data:
+            for model_id, model_data in cached_data.items():
+                if 'name' in model_data:
+                    name = model_data['name'].lower()
+                    url = model_data['url']
+                    id = model_data['model_id']
+                    title = model_data['title']
+                    authors = model_data['authors']
+                    model_info = ' '.join([str(v).lower() for v in model_data.values()])
+
+                    if query_text in model_info and model_id not in models:
+                        models[model_id] = {
+                            'ID': model_id,
+                            'name': name,
+                            'url': url,
+                            'id': id,
+                            'title': title,
+                            'authors': authors,
+                        }
+        return models
+
+    @staticmethod
+    def download_model_files(model_url, model_id):
+        LOCAL_DOWNLOAD_DIR = tempfile.mkdtemp()
+        model_url = f"https://raw.githubusercontent.com/TheBobBob/BiomodelsStore/main/biomodels/{model_id}/{model_id}_url.xml"
+        try:
+            response = requests.get(model_url)
+            if response.status_code == 200:
+                os.makedirs(LOCAL_DOWNLOAD_DIR, exist_ok=True)
+                file_path = os.path.join(LOCAL_DOWNLOAD_DIR, f"{model_id}.xml")
+                
+                with open(file_path, 'wb') as file:
+                    file.write(response.content)
+                
+                print(f"Model {model_id} downloaded successfully: {file_path}")
+                return file_path
+            else:
+                print(f"Failed to download the model from {model_url}. Status code: {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"Error downloading model {model_id} from {model_url}: {e}")
+            return None
+
                     </code>
                 </div>
             </section>
@@ -179,7 +218,6 @@ print(f"Response: {response}")
             <h2>Main</h2>
             <p>Below is an example of how to structure each function into the full pipeline. The pipeline below does the following....</p>
             <ol>
-                <li>Fetches GitHub JSON data.</li>
                 <li>Gets user input for a search query.</li>
                 <li>Searches models based on the query.</li>
                 <li>Downloads and processes each model.</li>
@@ -190,65 +228,50 @@ print(f"Response: {response}")
             <p>It can also be broken down into parts to use each function separately.</p>
             <div class="code-block">
                 <code>
-import os<br>
-import tempfile<br>
-from fetch_github_json import fetch_github_json<br>
-from search_models import search_models<br>
-from download_model_file import download_model_file<br>
-from convert_sbml_to_antimony import convert_sbml_to_antimony<br>
-from split_biomodels import split_biomodels<br>
-from create_vector_db import create_vector_db<br>
-from generate_response import generate_response<br>
+from biomodelcache import BioModelCacheRetrieval <br> 
+from convert_sbml_to_antimony import convert_sbml_to_antimony <br> 
+from split_biomodels import split_biomodels <br> 
+from create_vector_db import create_vector_db <br> 
+from generate_response import generate_response <br> 
+import os <br> 
+import tempfile <br>
 
-# Set up a temporary directory for model downloads<br>
-LOCAL_DOWNLOAD_DIR = tempfile.mkdtemp()<br>
+LOCAL_DOWNLOAD_DIR = tempfile.mkdtemp()  <br>
 
-def main(search_str: str, query_text: str, download_dir: str = LOCAL_DOWNLOAD_DIR) -> str:<br>
-    """<br>
-    Main function to execute the workflow of searching for models, downloading,<br>
-    converting, splitting, and querying the database.<br>
-
-    Args:<br>
-        search_str (str): The search query to find relevant models.<br>
-        query_text (str): The query text to generate a response from the vector database.<br>
-        download_dir (str): Directory to store downloaded files (default is a temporary directory).<br>
-
-    Returns:<br>
-        str: The response generated from the vector database based on the query text.<br>
-    """<br>
-    # Step 1: Fetch models and search for the query<br>
-    models = search_models(search_str)<br>
-
+def main():<br>
+    retriever = BioModelCacheRetrieval(search_str)<br>
+    models = retriever.search_models()<br>
+    
     if models:<br>
         all_final_items = []<br>
+        
         for model_id, model_data in models.items():<br>
+            print(f"Processing model: {model_data['name']}")<br>
+            
             model_url = model_data['url']<br>
-            model_file_path = download_model_file(model_url, model_id, download_dir)<br>
-
+            model_file_path = retriever.download_model_files(model_url, model_id)<br>
+            
             if model_file_path:<br>
-                # Step 3: Convert the downloaded SBML model to Antimony format<br>
-                antimony_file_path = os.path.join(download_dir, f"{model_id}.txt")<br>
+                antimony_file_path = os.path.join(LOCAL_DOWNLOAD_DIR, f"{model_id}.txt")<br>
                 convert_sbml_to_antimony(model_file_path, antimony_file_path)<br>
-
-                # Step 4: Split the Antimony format model<br>
+                
                 final_items = split_biomodels(antimony_file_path)<br>
                 all_final_items.extend(final_items)<br>
-
-        # Step 5: Create a vector database from the split biomodels<br>
+        
         if all_final_items:<br>
             db = create_vector_db(all_final_items)<br>
-
-            # Step 6: Query the vector database<br>
+            
+            query_text = input("Enter your question about the model(s): ")<br>
             response = generate_response(db, query_text)<br>
-            return response<br>
-    return "No models found or unable to process."  # Return a default message if no models are found or processed<br>
+            print(f"Response: {response}")<br>
+        else:<br>
+            return ValueError("No models were processed successfully.")<br>
+    else:<br>
+        return ValueError("No models found matching your search query.")<br>
 
-# Example usage<br>
 if __name__ == "__main__":<br>
     search_str = input("Enter search query: ")<br>
-    query_text = input("Enter your question about the model(s): ")<br>
-    result = main(search_str, query_text)<br>
-    print(f"Response: {result}")<br>
+    main(search_str)<br>
                 </code>
             </div>
         </section>
