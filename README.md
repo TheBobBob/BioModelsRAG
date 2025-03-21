@@ -8,3 +8,7 @@ Required Packages:
 3. ollama
 4. langchain_text_splitters
 5. chromadb
+
+# Instructions for how to use the package can be found at: https://thebobbob.github.io/BioModelsRAG/
+# PyPI Website: https://pypi.org/project/BioModelsRAG/
+
