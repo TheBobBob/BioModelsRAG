@@ -9,6 +9,9 @@ Required Packages:
 4. langchain_text_splitters
 5. chromadb
 
+This package has the ability to run both ollama and the Groq API. 
+
+
 # Instructions for how to use the package can be found at: https://thebobbob.github.io/BioModelsRAG/
 # PyPI Website: https://pypi.org/project/BioModelsRAG/
 

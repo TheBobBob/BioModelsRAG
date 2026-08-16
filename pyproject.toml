@@ -1,0 +1,26 @@
+[project]
+name = "biomodelsrag"
+version = "0.1.0"
+description = "A CLI tool to analyze BioModels using Retrieval Augmented Generation"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "google-fire>=0.6.0",
+    "requests",
+    "tellurium", 
+    "ollama", 
+    "langchain_text_splitters", 
+    "chromadb"
+    "groq",
+]
+
+[project.scripts]
+biomodelsrag = "biomodelsrag.main:main"
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
